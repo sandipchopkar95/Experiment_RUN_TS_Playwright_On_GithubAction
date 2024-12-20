@@ -44,6 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() }} # Ensures deployment runs even if tests fail
     steps:
+      # Check out the repository
+      - uses: actions/checkout@v4
+
       # Download Playwright report artifact
       - name: Download Playwright Report
         uses: actions/download-artifact@v4
@@ -63,6 +66,3 @@ jobs:
         with:
           personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           publish_dir: ./public
-
-
-
