@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: Playwright Tests and Report Deployment
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 jobs:
-  test:
+  test-and-deploy:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -31,50 +31,15 @@ jobs:
       - name: Run Playwright Tests
         run: npx playwright test --reporter=html
 
-      # Upload Playwright report as artifact
-      - uses: actions/upload-artifact@v4
-        if: ${{ always() }} # Ensures report upload even if tests fail
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-
-  deploy-report:
-    needs: test
-    runs-on: ubuntu-latest
-    if: ${{ always() }} # Ensures deployment runs even if tests fail
-    steps:
-      # Check out the repository
-      - uses: actions/checkout@v4
-
-      # Download Playwright report artifact
-      - name: Download Playwright Report
-        uses: actions/download-artifact@v4
-        with:
-          name: playwright-report
-          path: ./playwright-report
-
-      # Copy the report to the public directory for GitHub Pages
-      - name: Copy Playwright Report
+      # Copy the Playwright report to a deployable directory
+      - name: Prepare Playwright Report for Deployment
         run: |
           mkdir -p public
           cp -R playwright-report/* public/
 
-      # Deploy to GitHub Pages
+      # Deploy the Playwright report to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           publish_dir: ./public
-
-      # Display the URL where the report is published
-      - name: Display Published URL
-        run: echo "Report is published at https://<username>.github.io/<repository-name>/"
-
-  pages-build:
-    needs: deploy-report
-    runs-on: ubuntu-latest
-    steps:
-      - name: Confirm Pages Build Completion
-        run: echo "GitHub Pages deployment successful. Visit https://<username>.github.io/<repository-name>/"
-
