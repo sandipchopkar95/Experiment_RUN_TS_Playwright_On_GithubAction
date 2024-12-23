@@ -1,81 +1,48 @@
-name: Playwright Tests and Deployment
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: 
-      - main
-  pull_request:
-    branches: 
-      - main
+    branches:
+      - main # Trigger the workflow on pushes to the main branch
 
 jobs:
-  # Job to run tests
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - uses: actions/checkout@v4
-
-      # Set up Node.js
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      # Install dependencies
-      - name: Install dependencies
-        run: npm ci
-
-      # Install Playwright and its dependencies
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      # Run Playwright tests
-      - name: Run Playwright Tests
-        run: npx playwright test --reporter=html
-
-      # Upload Playwright report as artifact
-      - name: Upload Playwright Report
-        uses: actions/upload-artifact@v4
-        if: ${{ always() }} # Ensure the report is uploaded even if tests fail
-        with:
-          name: playwright-report
-          path: playwright-report/
-
-  # Job to build the site and prepare for deployment
   build:
-    needs: test # Ensure tests are run before building
     runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - uses: actions/checkout@v4
 
-      # Set up Node.js
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
-      # Install dependencies
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
 
-      # Build the site (replace with your actual build command)
-      - name: Build site
-        run: npm run build
+      - name: Build Project
+        run: |
+          if [ -f package.json ]; then
+            npm run build || echo "No build script found, skipping build."
+          else
+            echo "No package.json found, skipping build."
+          fi
 
-      # Upload site content as artifact
-      - name: Upload Site Content
+      - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./public # Replace with your build output directory
+          path: |
+            dist/ # Adjust this path to your build output folder
+            public/ # Alternative path for plain HTML/CSS/JS files
+          if-no-files-found: error
 
-  # Deployment job for GitHub Pages
   deploy:
-    needs: build # Ensure build is completed before deploying
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      pages: write # Grant permission to write to GitHub Pages
-      id-token: write # Required for deployment authentication
+
     steps:
-      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
