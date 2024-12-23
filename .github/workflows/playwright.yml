@@ -3,10 +3,7 @@ name: Playwright Tests
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # Only run the workflow on pushes to the main branch
 
 jobs:
   test:
@@ -39,8 +36,8 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-  publish-report:
-    needs: test
+  deploy-report:
+    needs: test  # Ensures it runs after the test job completes
     runs-on: ubuntu-latest
     steps:
       # Check out the repository
@@ -52,10 +49,16 @@ jobs:
         with:
           name: playwright-report
 
-      # Serve the report using GitHub Actions' URL
-      - name: Publish Test Report URL
+      # Copy the report to the deployment directory
+      - name: Prepare Report for Deployment
         run: |
-          echo "Playwright Test Report URL:"
-          echo "${{ github.server_url }}/{{ github.repository }}/actions/artifacts"
+          mkdir -p public
+          cp -r playwright-report/* public/
 
-      # hello
+      # Deploy the report to the branch where the workflow ran
+      - name: Deploy Report
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: public
+          publish_branch: ${{ github.ref_name }}  # Deploy to the same branch
