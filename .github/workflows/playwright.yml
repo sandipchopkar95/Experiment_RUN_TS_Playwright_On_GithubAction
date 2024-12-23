@@ -35,7 +35,6 @@ jobs:
           path: |
             dist/ # Adjust this path to your build output folder
             public/ # Alternative path for plain HTML/CSS/JS files
-          if-no-files-found: error
 
   deploy:
     needs: build
