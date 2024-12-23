@@ -1,4 +1,4 @@
-name: Playwright Tests Workflow
+name: Playwright Tests
 
 on:
   push:
@@ -67,35 +67,14 @@ jobs:
           personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           publish_dir: ./public
 
+      # Display the URL where the report is published
+      - name: Display Published URL
+        run: echo "Report is published at https://<username>.github.io/<repository-name>/"
+
   pages-build:
     needs: deploy-report
     runs-on: ubuntu-latest
     steps:
-      # Check out the repository
-      - uses: actions/checkout@v4
+      - name: Confirm Pages Build Completion
+        run: echo "GitHub Pages deployment successful. Visit https://<username>.github.io/<repository-name>/"
 
-      # Build Pages
-      - name: Build Pages
-        run: echo "Building Pages..."
-
-  report-build-status:
-    needs: pages-build
-    runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - uses: actions/checkout@v4
-
-      # Report Build Status
-      - name: Report Build Status
-        run: echo "Reporting Build Status..."
-
-  deploy:
-    needs: pages-build
-    runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - uses: actions/checkout@v4
-
-      # Deploy Application
-      - name: Deploy Application
-        run: echo "Deploying Application..."
