@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 jobs:
-  test-and-deploy:
+  test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -42,6 +42,14 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
+  prepare-deployment:
+    needs: test # Depends on the 'test' job
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       # Download Playwright report artifact
       - name: Download Playwright Report
         uses: actions/download-artifact@v4
@@ -54,6 +62,27 @@ jobs:
         run: |
           mkdir -p public
           cp -R playwright-report/* public/
+
+      # Upload prepared content for deployment
+      - name: Upload Deployment Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-deployment
+          path: ./public
+
+  deploy-report:
+    needs: prepare-deployment # Depends on the 'prepare-deployment' job
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Download deployment artifact
+      - name: Download Deployment Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: public-deployment
 
       # Setup Pages
       - name: Setup Pages
