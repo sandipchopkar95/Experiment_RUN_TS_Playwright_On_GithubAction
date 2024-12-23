@@ -1,58 +1,51 @@
-name: Playwright Tests and Deployment
+name: Playwright Tests and Deploy
 
 on:
   push:
     branches: [main, master]
-  pull_request:
-    branches: [main, master]
 
 permissions:
-  contents: read  # Access repo content
-  pages: write    # Required for Pages deployment
-  id-token: write # Required for authentication during deployment
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  test-and-deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
-      # Check out the repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Set up Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
-      # Install dependencies
       - name: Install Dependencies
         run: npm ci
 
-      # Install Playwright Browsers
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # Run Playwright Tests
       - name: Run Playwright Tests
         run: npx playwright test --reporter=html
 
-      # Prepare Playwright report for deployment
-      - name: Prepare GitHub Pages Content
+      - name: Prepare Pages Content
         run: |
           mkdir -p public
           cp -R playwright-report/* public/
 
-      # Upload the artifact for GitHub Pages
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v1
         with:
           path: ./public
 
-      # Configure GitHub Pages
-      - name: Setup GitHub Pages
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v2
 
-      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
