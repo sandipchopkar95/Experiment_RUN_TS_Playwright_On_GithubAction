@@ -1,4 +1,4 @@
-name: Playwright Tests and Report Deployment
+name: Playwright Tests and Deployment
 
 on:
   push:
@@ -12,15 +12,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Check out the repository
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       # Set up Node.js
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
       # Install dependencies
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm ci
 
       # Install Playwright and its dependencies
@@ -31,15 +33,36 @@ jobs:
       - name: Run Playwright Tests
         run: npx playwright test --reporter=html
 
-      # Copy the Playwright report to a deployable directory
-      - name: Prepare Playwright Report for Deployment
+      # Upload Playwright report as an artifact
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }} # Ensures report upload even if tests fail
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      # Download Playwright report artifact
+      - name: Download Playwright Report
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: ./playwright-report
+
+      # Prepare the report for deployment to GitHub Pages
+      - name: Prepare GitHub Pages Content
         run: |
           mkdir -p public
           cp -R playwright-report/* public/
 
-      # Deploy the Playwright report to GitHub Pages
+      # Setup Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+
+      # Upload artifacts for GitHub Pages
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v1
+
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          publish_dir: ./public
+        uses: actions/deploy-pages@v1
