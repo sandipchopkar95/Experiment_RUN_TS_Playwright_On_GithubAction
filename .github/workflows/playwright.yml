@@ -54,17 +54,15 @@ jobs:
           name: playwright-report
           path: ./playwright-report
 
-      # Move the Playwright report to the appropriate directory
+      # Copy the report to the public directory for GitHub Pages
       - name: Copy Playwright Report
         run: |
-          mkdir -p docs
-          cp -R playwright-report/* docs/
+          mkdir -p public
+          cp -R playwright-report/* public/
 
-      # Commit and push the updated report to the main branch
-      - name: Commit and Push Report
-        run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/
-          git commit -m "Update Playwright Report"
-          git push origin main
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          publish_dir: ./public
