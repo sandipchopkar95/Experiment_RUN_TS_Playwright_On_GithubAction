@@ -1,0 +1,34 @@
+name: Pages Deployment
+
+on:
+  workflow_run:
+    workflows: ["Playwright Test"] # Reference the exact workflow name
+    types:
+      - completed
+
+jobs:
+  deploy-pages:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - uses: actions/checkout@v4
+
+      # Download Playwright Report Artifact
+      - name: Download Playwright Report
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: ./playwright-report
+
+      # Prepare Report for Deployment
+      - name: Prepare Playwright Report
+        run: |
+          mkdir -p public
+          cp -R playwright-report/* public/
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          publish_dir: ./public
