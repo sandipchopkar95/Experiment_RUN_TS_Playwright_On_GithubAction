@@ -7,7 +7,9 @@ on:
     branches: [main, master]
 
 permissions:
-  contents: read # Read access for fetching repo content
+  contents: read  # Required for accessing repo content
+  pages: write    # Required for GitHub Pages deployment
+  id-token: write # Required for authentication during deployment
 
 jobs:
   test:
@@ -43,11 +45,13 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
 
-  prepare-deployment:
-    needs: test # Depends on the 'test' job
+  deploy:
+    needs: test
     runs-on: ubuntu-latest
+    permissions:
+      pages: write    # Required for Pages deployment
+      id-token: write # Required for authentication
     steps:
       # Check out the repository
       - name: Checkout Repository
@@ -60,37 +64,22 @@ jobs:
           name: playwright-report
           path: ./playwright-report
 
-      # Prepare the report for deployment to GitHub Pages
+      # Prepare the report for deployment
       - name: Prepare GitHub Pages Content
         run: |
           mkdir -p public
           cp -R playwright-report/* public/
 
-      # Upload prepared content for deployment
-      - name: Upload Deployment Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: public-deployment
-          path: ./public
+      # Configure Pages for deployment
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v2
 
-  deploy-report:
-    needs: prepare-deployment # Depends on the 'prepare-deployment' job
-    runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      # Download deployment artifact
-      - name: Download Deployment Artifact
-        uses: actions/download-artifact@v4
+      # Upload content to GitHub Pages
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          name: public-deployment
           path: ./public
 
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          publish_dir: ./public
+        uses: actions/deploy-pages@v1
