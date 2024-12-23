@@ -1,51 +1,81 @@
-name: Playwright Tests and Deploy
+name: Playwright Tests and Deployment
 
 on:
   push:
-    branches: [main, master]
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    branches: 
+      - main
+  pull_request:
+    branches: 
+      - main
 
 jobs:
+  # Job to run tests
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      # Check out the repository
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # Set up Node.js
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
 
-      - name: Install Dependencies
+      # Install dependencies
+      - name: Install dependencies
         run: npm ci
 
+      # Install Playwright and its dependencies
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
+      # Run Playwright tests
       - name: Run Playwright Tests
         run: npx playwright test --reporter=html
 
-      - name: Prepare Pages Content
-        run: |
-          mkdir -p public
-          cp -R playwright-report/* public/
-
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v1
+      # Upload Playwright report as artifact
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }} # Ensure the report is uploaded even if tests fail
         with:
-          path: ./public
+          name: playwright-report
+          path: playwright-report/
 
-  deploy:
-    needs: test
+  # Job to build the site and prepare for deployment
+  build:
+    needs: test # Ensure tests are run before building
     runs-on: ubuntu-latest
     steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v2
+      # Check out the repository
+      - uses: actions/checkout@v4
 
+      # Set up Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Build the site (replace with your actual build command)
+      - name: Build site
+        run: npm run build
+
+      # Upload site content as artifact
+      - name: Upload Site Content
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./public # Replace with your build output directory
+
+  # Deployment job for GitHub Pages
+  deploy:
+    needs: build # Ensure build is completed before deploying
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # Grant permission to write to GitHub Pages
+      id-token: write # Required for deployment authentication
+    steps:
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
