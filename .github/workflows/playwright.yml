@@ -1,12 +1,14 @@
-name: Playwright Tests
+name: Playwright Tests Workflow
 
 on:
   push:
-    branches:
-      - main  # Only run the workflow on pushes to the main branch
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
 
 jobs:
   test:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       # Check out the repository
@@ -21,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Install Playwright browsers
+      # Install Playwright and its dependencies
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
@@ -29,16 +31,18 @@ jobs:
       - name: Run Playwright Tests
         run: npx playwright test --reporter=html
 
-      # Upload Playwright report as an artifact
+      # Upload Playwright report as artifact
       - uses: actions/upload-artifact@v4
-        name: Save Playwright Report
+        if: ${{ always() }} # Ensures report upload even if tests fail
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 30
 
   deploy-report:
-    needs: test  # Ensures it runs after the test job completes
+    needs: test
     runs-on: ubuntu-latest
+    if: ${{ always() }} # Ensures deployment runs even if tests fail
     steps:
       # Check out the repository
       - uses: actions/checkout@v4
@@ -48,17 +52,50 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: playwright-report
+          path: ./playwright-report
 
-      # Copy the report to the deployment directory
-      - name: Prepare Report for Deployment
+      # Copy the report to the public directory for GitHub Pages
+      - name: Copy Playwright Report
         run: |
           mkdir -p public
-          cp -r playwright-report/* public/
+          cp -R playwright-report/* public/
 
-      # Deploy the report to the branch where the workflow ran
-      - name: Deploy Report
-        uses: peaceiris/actions-gh-pages@v4
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: public
-          publish_branch: ${{ github.ref_name }}  # Deploy to the same branch
+          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          publish_dir: ./public
+
+  pages-build:
+    needs: deploy-report
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - uses: actions/checkout@v4
+
+      # Build Pages
+      - name: Build Pages
+        run: echo "Building Pages..."
+
+  report-build-status:
+    needs: pages-build
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - uses: actions/checkout@v4
+
+      # Report Build Status
+      - name: Report Build Status
+        run: echo "Reporting Build Status..."
+
+  deploy:
+    needs: pages-build
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - uses: actions/checkout@v4
+
+      # Deploy Application
+      - name: Deploy Application
+        run: echo "Deploying Application..."
