@@ -23,17 +23,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Install Playwright and its dependencies
+      # Install Playwright Browsers and dependencies
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # Run Playwright tests
+      # Run Playwright tests with HTML reporter
       - name: Run Playwright Tests
         run: npx playwright test --reporter=html
 
-      # Upload Playwright report as artifact
+      # Upload Playwright report as artifact, even if tests fail
       - uses: actions/upload-artifact@v4
-        if: ${{ always() }} # Ensures report upload even if tests fail
+        if: ${{ always() }}
         with:
           name: playwright-report
           path: playwright-report/
@@ -42,27 +42,27 @@ jobs:
   deploy-report:
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ always() }} # Ensures deployment runs even if tests fail
+    if: ${{ always() }} # deploy even if tests fail
     steps:
-      # Check out the repository
+      # Check out the repo again
       - uses: actions/checkout@v4
 
-      # Download Playwright report artifact
+      # Download the report artifact
       - name: Download Playwright Report
         uses: actions/download-artifact@v4
         with:
           name: playwright-report
           path: ./playwright-report
 
-      # Copy the report to the public directory for GitHub Pages
-      - name: Copy Playwright Report
+      # Copy the report contents into public/
+      - name: Copy Playwright Report to public folder
         run: |
           mkdir -p public
           cp -R playwright-report/* public/
 
-      # Deploy to GitHub Pages
+      # Deploy to GitHub Pages using peaceiris/actions-gh-pages v4 and github_token
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
